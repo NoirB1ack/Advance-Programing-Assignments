@@ -1,53 +1,145 @@
-#include <stdio.h>
-#include <time.h>
+import pytest
+import os
 
-void constantTime() {
-    int x = 5;
-    x = x * 2 + 7;
-}
+class ScoreProcessor:
+    def process_score_file(self, file_path: str) -> int:
+        file = None
+        try:
+            # Attempt to open and read the file
+            file = open(file_path, 'r')
+            content = file.read().strip()
+            score = int(content)
+            result = score * 10
+            
+        except FileNotFoundError:
+            print(f"Error: The file '{file_path}' was not found. Please verify the path.")
+            raise  # Re-raising allows pytest.raises to catch this in the test suite
+            
+        except ValueError:
+            print("Error: Invalid format. The file must contain only a numeric integer.")
+            raise
+            
+        else:
+            # Executes only if no exceptions were raised in the try block
+            print("Data processed successfully")
+            return result
+            
+        finally:
+            # Always executes, regardless of success or failure
+            print("File cleanup completed")
+            if file and not file.closed:
+                file.close()
 
-void linearTime(int n) {
-    long long sum = 0;
-    for (int i = 0; i < n; i++)
-        sum += i;
-}
 
-void quadraticTime(int n) {
-    long long count = 0;
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            count++;
-}
+# ==========================================
+#               PYTEST SUITE (15 Tests)
+# ==========================================
 
-int main() {
+# --- SUCCESS PATHS (Valid Data) ---
 
-    int n;
-    clock_t start, end;
-    double timeTaken;
+def test_01_success_standard(tmp_path):
+    test_file = tmp_path / "t1.txt"
+    test_file.write_text("42")
+    assert ScoreProcessor().process_score_file(str(test_file)) == 420
 
-    printf("Enter value of n: ");
-    scanf("%d", &n);
+def test_02_success_zero(tmp_path):
+    test_file = tmp_path / "t2.txt"
+    test_file.write_text("0")
+    assert ScoreProcessor().process_score_file(str(test_file)) == 0
 
+def test_03_success_negative(tmp_path):
+    test_file = tmp_path / "t3.txt"
+    test_file.write_text("-5")
+    assert ScoreProcessor().process_score_file(str(test_file)) == -50
+
+def test_04_success_large_number(tmp_path):
+    test_file = tmp_path / "t4.txt"
+    test_file.write_text("999999")
+    assert ScoreProcessor().process_score_file(str(test_file)) == 9999990
+
+def test_05_success_with_surrounding_whitespace(tmp_path):
+    test_file = tmp_path / "t5.txt"
+    test_file.write_text("   \n \t 75 \n  ")
+    assert ScoreProcessor().process_score_file(str(test_file)) == 750
+
+# --- ERROR PATHS (Missing Files) ---
+
+def test_06_missing_file_standard():
+    with pytest.raises(FileNotFoundError):
+        ScoreProcessor().process_score_file("non_existent_file_123.txt")
+
+def test_07_missing_file_empty_path():
+    with pytest.raises(FileNotFoundError):
+        ScoreProcessor().process_score_file("")
+
+# --- ERROR PATHS (ValueError / Invalid Data) ---
+
+def test_08_invalid_letters(tmp_path):
+    test_file = tmp_path / "t8.txt"
+    test_file.write_text("Eighty-Five")
+    with pytest.raises(ValueError):
+        ScoreProcessor().process_score_file(str(test_file))
+
+def test_09_invalid_float(tmp_path):
+    test_file = tmp_path / "t9.txt"
+    test_file.write_text("42.5")
+    with pytest.raises(ValueError):
+        ScoreProcessor().process_score_file(str(test_file))
+
+def test_10_invalid_empty_file(tmp_path):
+    test_file = tmp_path / "t10.txt"
+    test_file.write_text("")
+    with pytest.raises(ValueError):
+        ScoreProcessor().process_score_file(str(test_file))
+
+def test_11_invalid_special_characters(tmp_path):
+    test_file = tmp_path / "t11.txt"
+    test_file.write_text("@#$!")
+    with pytest.raises(ValueError):
+        ScoreProcessor().process_score_file(str(test_file))
+
+def test_12_invalid_alphanumeric_mix(tmp_path):
+    test_file = tmp_path / "t12.txt"
+    test_file.write_text("42abc")
+    with pytest.raises(ValueError):
+        ScoreProcessor().process_score_file(str(test_file))
+
+def test_13_invalid_multiple_lines_of_numbers(tmp_path):
+    test_file = tmp_path / "t13.txt"
+    test_file.write_text("10\n20") 
+    with pytest.raises(ValueError):
+        ScoreProcessor().process_score_file(str(test_file))
+
+def test_14_invalid_whitespace_only(tmp_path):
+    test_file = tmp_path / "t14.txt"
+    test_file.write_text("     \t \n  ")
+    with pytest.raises(ValueError):
+        ScoreProcessor().process_score_file(str(test_file))
+
+def test_15_invalid_hex_string(tmp_path):
+    test_file = tmp_path / "t15.txt"
+    test_file.write_text("0x2A")
+    with pytest.raises(ValueError):
+        ScoreProcessor().process_score_file(str(test_file))
+
+
+# ==========================================
+#         INTERACTIVE USER INTERFACE
+# ==========================================
+
+if __name__ == "__main__":
+    print("=== File Score Multiplier ===")
+    user_file_path = input("Enter the path to your text file (e.g., score.txt): ")
     
-    start = clock();
-    constantTime();
-    end = clock();
-    printf("\nConstant Time O(1): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
-
+    processor = ScoreProcessor()
     
-    start = clock();
-    linearTime(n);
-    end = clock();
-    printf("\nLinear Time O(n): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
-
-    
-    start = clock();
-    quadraticTime(n);
-    end = clock();
-    printf("\nQuadratic Time O(n^2): %f seconds\n",
-           (double)(end - start) / CLOCKS_PER_SEC);
-
-    return 0;
-}
+    try:
+        # Run the processor
+        calculated_result = processor.process_score_file(user_file_path)
+        print(f"--> Final Calculated Output: {calculated_result}")
+        
+    except (FileNotFoundError, ValueError):
+        # We catch the errors here purely to prevent an ugly Python 
+        # traceback from cluttering the user's terminal. The class 
+        # already prints the friendly error messages before this point!
+        print("--> Process aborted due to the error above.")
