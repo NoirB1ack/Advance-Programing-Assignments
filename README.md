@@ -1,6 +1,6 @@
 # Assignment 08: Course Enrollment Dashboard
 
-## Technology Used
+## Used
 
 - React
 
