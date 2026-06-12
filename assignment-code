@@ -1,53 +1,74 @@
-#include <stdio.h>
-#include <time.h>
+# A10.py
 
-void constantTime() {
-    int x = 5;
-    x = x * 2 + 7;
-}
+class Address:
+    """Represents a physical address for composition."""
+    def __init__(self, street, city, zip_code):
+        self.street = street
+        self.city = city
+        self.zip_code = zip_code
 
-void linearTime(int n) {
-    long long sum = 0;
-    for (int i = 0; i < n; i++)
-        sum += i;
-}
+    def __str__(self):
+        return f"{self.street}, {self.city}, {self.zip_code}"
 
-void quadraticTime(int n) {
-    long long count = 0;
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            count++;
-}
 
-int main() {
+class Student:
+    """Base Student class demonstrating composition and protected attributes."""
+    def __init__(self, name, age, address):
+        self.name = name
+        self._age = None  # Protected attribute
+        self.age = age    # Triggers the setter for validation
+        self.address = address  # Composition: Student HAS-A Address
+        self.courses = []       # Mutable list
 
-    int n;
-    clock_t start, end;
-    double timeTaken;
+    @property
+    def age(self):
+        return self._age
 
-    printf("Enter value of n: ");
-    scanf("%d", &n);
+    @age.setter
+    def age(self, value):
+        if not isinstance(value, int) or value < 0:
+            raise ValueError("Age must be a positive integer.")
+        self._age = value
 
-    
-    start = clock();
-    constantTime();
-    end = clock();
-    printf("\nConstant Time O(1): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    def add_course(self, course_name):
+        """Updates the mutable course list."""
+        self.courses.append(course_name)
 
-    
-    start = clock();
-    linearTime(n);
-    end = clock();
-    printf("\nLinear Time O(n): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    def display(self):
+        print(f"--- Student Record ---")
+        print(f"Name: {self.name}")
+        print(f"Age: {self.age}")
+        print(f"Address: {self.address}")
+        print(f"Courses: {', '.join(self.courses) if self.courses else 'None'}")
 
-    
-    start = clock();
-    quadraticTime(n);
-    end = clock();
-    printf("\nQuadratic Time O(n^2): %f seconds\n",
-           (double)(end - start) / CLOCKS_PER_SEC);
 
-    return 0;
-}
+class ScholarshipStudent(Student):
+    """Derived class demonstrating inheritance and method overriding."""
+    def __init__(self, name, age, address, scholarship_amount):
+        # Initialize parent attributes using super()
+        super().__init__(name, age, address)
+        self.scholarship_amount = scholarship_amount
+
+    def display(self):
+        # Leverage parent display logic
+        super().display()
+        print(f"Scholarship: ${self.scholarship_amount:,.2f}")
+
+
+# --- Execution Example ---
+if __name__ == "__main__":
+    # 1. Create Address object
+    home_addr = Address("123 Python Lane", "Codeville", "90210")
+
+    # 2. Create a ScholarshipStudent
+    student = ScholarshipStudent("Alex Smith", 20, home_addr, 5000)
+
+    # 3. Demonstrate mutability (adding courses)
+    student.add_course("Data Structures")
+    student.add_course("Algorithms")
+
+    # 4. Display results
+    student.display()
+
+    # 5. Demonstrate validation (uncomment to test error)
+    # student.age = -5  # Raises ValueError
