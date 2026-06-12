@@ -23,3 +23,13 @@ Your program must demonstrate:
   - `pthread_mutex_lock()`
   - `pthread_mutex_unlock()`
 - Thread completion using `pthread_join()`
+
+## Notes
+
+- The implementation uses POSIX threads (`pthread`) to create and manage multiple threads.
+- A shared global counter variable is accessed concurrently by multiple threads.
+- The unsynchronized version demonstrates incorrect results caused by race conditions.
+- The synchronized version uses a mutex to protect the critical section and ensure data consistency.
+- Thread lifecycle management is performed using `pthread_create()` and `pthread_join()`.
+- The accompanying documentation explains why race conditions occur and how mutex synchronization resolves them.
+- Sample outputs are included for verification and demonstration purposes.
