@@ -2,7 +2,7 @@
 
 ## Question
 
-Design a system in Java for processing customer orders in an e-commerce platform.
+Design a system in Python for processing customer orders in an e-commerce platform.
 
 ### System Requirements
 
