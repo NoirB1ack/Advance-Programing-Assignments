@@ -34,4 +34,4 @@ git checkout assignment6      # then read its README.md and source
 | `assignment-16` | Thread Synchronization using Condition Variables | C |
 | `assignment-17` | User Onboarding Validation Module with Testing | Python |
 | `assignment-18` | Score Processing Utility with Exception Handling & Testing | Python |
-| `assignment-19` | Digital Counter & Theme Toggle App | React Native |
+| `assignment-19` | Digital Counter & Theme Toggle App | React Native (Expo) |
