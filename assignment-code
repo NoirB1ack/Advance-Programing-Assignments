@@ -1,53 +1,69 @@
-#include <stdio.h>
-#include <time.h>
+# A11.py
+from abc import ABC, abstractmethod
 
-void constantTime() {
-    int x = 5;
-    x = x * 2 + 7;
-}
-
-void linearTime(int n) {
-    long long sum = 0;
-    for (int i = 0; i < n; i++)
-        sum += i;
-}
-
-void quadraticTime(int n) {
-    long long count = 0;
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            count++;
-}
-
-int main() {
-
-    int n;
-    clock_t start, end;
-    double timeTaken;
-
-    printf("Enter value of n: ");
-    scanf("%d", &n);
-
+class LibraryItem(ABC):
+    """Base abstract class representing common structure for all items."""
     
-    start = clock();
-    constantTime();
-    end = clock();
-    printf("\nConstant Time O(1): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    # Additional Feature 1: Class-level static counter
+    total_items_created = 0
 
+    def __init__(self, title, year):
+        self.title = title
+        self.year = year
+        
+        # Increment the counter every time a new item is instantiated
+        LibraryItem.total_items_created += 1
+
+    @abstractmethod
+    def display_info(self):
+        """Abstract method that must be implemented by all subclasses."""
+        pass
+
+
+class Book(LibraryItem):
+    """Subclass representing a Book."""
+
+    def __init__(self, title, year, author):
+        super().__init__(title, year)
+        self.author = author
+
+    def display_info(self):
+        """Method Overriding: Book's specific implementation."""
+        print(f"[Book] '{self.title}' ({self.year}) - Author: {self.author}")
+
+
+class DVD(LibraryItem):
+    """Subclass representing a DVD."""
+
+    # Additional Feature 2: Default argument for genre
+    def __init__(self, title, year, duration, genre="Unspecified"):
+        super().__init__(title, year)
+        self.duration = duration
+        self.genre = genre
+
+    def display_info(self):
+        """Method Overriding: DVD's specific implementation."""
+        print(f"[DVD]  '{self.title}' ({self.year}) - {self.genre}, {self.duration} mins")
+
+
+if __name__ == "__main__":
+    print("--- Initializing Library Catalog ---")
     
-    start = clock();
-    linearTime(n);
-    end = clock();
-    printf("\nLinear Time O(n): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    # Creating a collection of LibraryItem objects
+    # Note how the second DVD omits the genre, utilizing the default argument
+    catalog = [
+        Book("Dune", 1965, "Frank Herbert"),
+        DVD("The Matrix", 1999, 136, "Sci-Fi"),
+        Book("The Hobbit", 1937, "J.R.R. Tolkien"),
+        DVD("Stop Making Sense", 1984, 88) 
+    ]
 
-    
-    start = clock();
-    quadraticTime(n);
-    end = clock();
-    printf("\nQuadratic Time O(n^2): %f seconds\n",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    print("\n--- Polymorphism in Action ---")
+    # Polymorphism: Iterating through a single collection of different types.
+    # The loop calls the exact same method name, but the program dynamically 
+    # executes the correct overridden method based on the object's actual class.
+    for item in catalog:
+        item.display_info()
 
-    return 0;
-}
+    print("\n--- System Statistics ---")
+    print(f"Total Library Items in System: {LibraryItem.total_items_created}")
