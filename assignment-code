@@ -1,53 +1,234 @@
-#include <stdio.h>
-#include <time.h>
+from abc import ABC, abstractmethod
+from typing import List
+import json
 
-void constantTime() {
-    int x = 5;
-    x = x * 2 + 7;
-}
+# ==========================================
+# 1. Interfaces (ISP & DIP)
+# ==========================================
 
-void linearTime(int n) {
-    long long sum = 0;
-    for (int i = 0; i < n; i++)
-        sum += i;
-}
+class PaymentProcessor(ABC):
+    @abstractmethod
+    def process_payment(self, amount: float) -> bool:
+        pass
 
-void quadraticTime(int n) {
-    long long count = 0;
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            count++;
-}
+class NotificationSender(ABC):
+    @abstractmethod
+    def send_notification(self, message: str) -> None:
+        pass
 
-int main() {
+class OrderStorage(ABC):
+    @abstractmethod
+    def save_order(self, order_id: str, order_data: dict) -> None:
+        pass
 
-    int n;
-    clock_t start, end;
-    double timeTaken;
+# ==========================================
+# 2. Domain Models (LSP)
+# ==========================================
 
-    printf("Enter value of n: ");
-    scanf("%d", &n);
+class Order(ABC):
+    def __init__(self, order_id: str, items: List[dict]):
+        self.order_id = order_id
+        self.items = items
+        self.base_total = sum(item['price'] * item['quantity'] for item in items)
 
+    @abstractmethod
+    def get_total(self) -> float:
+        pass
     
-    start = clock();
-    constantTime();
-    end = clock();
-    printf("\nConstant Time O(1): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    def get_order_details(self) -> dict:
+        return {
+            "order_id": self.order_id,
+            "items": self.items,
+            "total_amount": self.get_total()
+        }
 
+class RegularOrder(Order):
+    def get_total(self) -> float:
+        return self.base_total
+
+class DiscountedOrder(Order):
+    def __init__(self, order_id: str, items: List[dict], discount_percentage: float):
+        super().__init__(order_id, items)
+        self.discount_percentage = discount_percentage
+
+    def get_total(self) -> float:
+        discount = self.base_total * (self.discount_percentage / 100.0)
+        return self.base_total - discount
+
+class PriorityOrder(Order):
+    def __init__(self, order_id: str, items: List[dict], priority_fee: float):
+        super().__init__(order_id, items)
+        self.priority_fee = priority_fee
+
+    def get_total(self) -> float:
+        return self.base_total + self.priority_fee
+
+# ==========================================
+# 3. Concrete Implementations (OCP)
+# ==========================================
+
+# --- Payment Methods ---
+class CreditCardPayment(PaymentProcessor):
+    def process_payment(self, amount: float) -> bool:
+        print(f"Processing Credit Card payment of ${amount:.2f}...")
+        return True
+
+class UPIPayment(PaymentProcessor):
+    def process_payment(self, amount: float) -> bool:
+        print(f"Processing UPI payment of ${amount:.2f}...")
+        return True
+
+class WalletPayment(PaymentProcessor):
+    def process_payment(self, amount: float) -> bool:
+        print(f"Processing Wallet payment of ${amount:.2f}...")
+        return True
+
+# --- Notification Methods ---
+class EmailNotification(NotificationSender):
+    def send_notification(self, message: str) -> None:
+        print(f"[Email Notification]: {message}")
+
+class SMSNotification(NotificationSender):
+    def send_notification(self, message: str) -> None:
+        print(f"[SMS Notification]: {message}")
+
+class PushNotification(NotificationSender):
+    def send_notification(self, message: str) -> None:
+        print(f"[Push Notification]: {message}")
+
+# --- Storage Methods ---
+class DatabaseStorage(OrderStorage):
+    def save_order(self, order_id: str, order_data: dict) -> None:
+        print(f"Saving order {order_id} to Database...")
+
+class FileStorage(OrderStorage):
+    def save_order(self, order_id: str, order_data: dict) -> None:
+        filename = f"{order_id}.json"
+        
+        # This actually creates a file on your computer and writes the data to it
+        with open(filename, 'w') as file:
+            json.dump(order_data, file, indent=4)
+            
+        print(f" Success: Order actually saved to a new file named '{filename}' in your folder!")
+
+# ==========================================
+# 4. Service Layer (SRP & DIP)
+# ==========================================
+
+class OrderService:
+    def __init__(self, 
+                 payment_processor: PaymentProcessor, 
+                 notification_sender: NotificationSender, 
+                 order_storage: OrderStorage):
+        self.payment_processor = payment_processor
+        self.notification_sender = notification_sender
+        self.order_storage = order_storage
+
+    def process(self, order: Order) -> None:
+        print(f"\n==============================================")
+        print(f"--- Initiating Order Processing: {order.order_id} ---")
+        
+        amount_to_pay = order.get_total()
+        payment_success = self.payment_processor.process_payment(amount_to_pay)
+        
+        if payment_success:
+            self.order_storage.save_order(order.order_id, order.get_order_details())
+            self.notification_sender.send_notification(
+                f"Order {order.order_id} processed successfully! Amount paid: ${amount_to_pay:.2f}"
+            )
+        else:
+            self.notification_sender.send_notification(
+                f"Order {order.order_id} failed due to payment issues."
+            )
+        print(f"==============================================\n")
+
+# ==========================================
+# 5. Interactive Execution (User Input)
+# ==========================================
+if __name__ == "__main__":
+    print("Welcome to the E-Commerce Order System")
+    print("--------------------------------------")
     
-    start = clock();
-    linearTime(n);
-    end = clock();
-    printf("\nLinear Time O(n): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    # 1. Build the Cart dynamically
+    cart_items = []
+    while True:
+        item_name = input("\nEnter item name (or type 'done' to finish): ")
+        if item_name.lower() == 'done':
+            break
+        
+        try:
+            item_price = float(input(f"Enter price for '{item_name}': $"))
+            item_qty = int(input(f"Enter quantity for '{item_name}': "))
+            cart_items.append({
+                "name": item_name, 
+                "price": item_price, 
+                "quantity": item_qty
+            })
+        except ValueError:
+            print("Invalid input. Please enter valid numbers for price and quantity.")
+            
+    if not cart_items:
+        print("Your cart is empty. Exiting system.")
+        exit()
 
+    order_id = "ORD-USER-001"
+
+    # 2. Select Order Type
+    print("\n--- Select Order Type ---")
+    print("1. Regular Order")
+    print("2. Discounted Order")
+    print("3. Priority Order")
+    order_choice = input("Enter choice (1/2/3): ")
+
+    if order_choice == '2':
+        pct = float(input("Enter discount percentage (e.g., 10 for 10%): "))
+        order = DiscountedOrder(order_id, cart_items, pct)
+    elif order_choice == '3':
+        fee = float(input("Enter priority rush fee amount: $"))
+        order = PriorityOrder(order_id, cart_items, fee)
+    else:
+        order = RegularOrder(order_id, cart_items)
+
+    # 3. Select Payment Method
+    print("\n--- Select Payment Method ---")
+    print("1. Credit Card\n2. UPI\n3. Wallet")
+    pay_choice = input("Enter choice (1/2/3): ")
     
-    start = clock();
-    quadraticTime(n);
-    end = clock();
-    printf("\nQuadratic Time O(n^2): %f seconds\n",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    if pay_choice == '2':
+        payment_processor = UPIPayment()
+    elif pay_choice == '3':
+        payment_processor = WalletPayment()
+    else:
+        payment_processor = CreditCardPayment()
 
-    return 0;
-}
+    # 4. Select Notification Method
+    print("\n--- Select Notification Method ---")
+    print("1. Email\n2. SMS\n3. Push")
+    notif_choice = input("Enter choice (1/2/3): ")
+    
+    if notif_choice == '2':
+        notification_sender = SMSNotification()
+    elif notif_choice == '3':
+        notification_sender = PushNotification()
+    else:
+        notification_sender = EmailNotification()
+
+    # 5. Select Storage Method
+    print("\n--- Select Storage Method ---")
+    print("1. Database\n2. File System")
+    store_choice = input("Enter choice (1/2): ")
+    
+    if store_choice == '2':
+        order_storage = FileStorage()
+    else:
+        order_storage = DatabaseStorage()
+
+    # 6. Execute the Service
+    service = OrderService(
+        payment_processor=payment_processor,
+        notification_sender=notification_sender,
+        order_storage=order_storage
+    )
+    
+    # Process the user-configured order
+    service.process(order)
