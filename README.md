@@ -61,3 +61,12 @@ Requirements:
 
 - Demonstrate the buffer growing at least twice during execution.
 - Properly free all allocated memory before program termination.
+
+## Notes
+
+- The implementation demonstrates dynamic memory allocation using `malloc()` and `realloc()`.
+- Buffer resizing is performed automatically when additional capacity is required.
+- Safe handling of allocation failures is implemented to prevent data loss and undefined behavior.
+- Memory cleanup is performed using a dedicated destructor function to avoid memory leaks.
+- The program demonstrates dynamic buffer growth multiple times during execution.
+- Sample outputs are included for verification and demonstration purposes.
