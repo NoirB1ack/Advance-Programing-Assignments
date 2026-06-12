@@ -59,3 +59,12 @@ gc.collect()
 ```
 
 Print the number of unreachable objects collected by the garbage collector.
+
+## Notes
+
+- The implementation demonstrates how circular references can prevent immediate object cleanup despite the removal of direct references.
+- Reference counts are inspected using `sys.getrefcount()`.
+- The `gc` module is used to investigate and collect unreachable objects.
+- The program illustrates the difference between reference counting and Python's cyclic garbage collection mechanism.
+- Garbage collection is explicitly triggered using `gc.collect()`.
+- Sample outputs are included for verification and demonstration purposes.
