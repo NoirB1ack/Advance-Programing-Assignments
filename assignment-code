@@ -1,0 +1,36 @@
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class A3 {
+    public static void main(String[] args) {
+    
+        ArrayList<String> library = new ArrayList<>();
+
+        library.add("The Great Gatsby");
+        library.add("The Hobbit");
+        library.add("A Tale of Two Cities");
+        library.add("The Catcher in the Rye");
+        library.add("Brave New World");
+        library.add("The Fellowship of the Ring");
+
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter a word to search for in book titles: ");
+        String searchWord = scanner.nextLine();
+
+        System.out.println("\n--- Search Results ---");
+        boolean found = false;
+
+        for (String book : library) {
+            if (book.toLowerCase().contains(searchWord.toLowerCase())) {
+                System.out.println("- " + book);
+                found = true;
+            }
+        }
+
+        if (!found) {
+            System.out.println("No books found containing '" + searchWord + "'.");
+        }
+        
+        scanner.close();
+    }
+}
