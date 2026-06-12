@@ -1,53 +1,125 @@
 #include <stdio.h>
-#include <time.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
 
-void constantTime() {
-    int x = 5;
-    x = x * 2 + 7;
+#define BUFFER_SIZE 5
+#define NUM_PRODUCERS 2
+#define NUM_CONSUMERS 2
+#define ITEMS_PER_THREAD 5 // Each producer produces 5, each consumer consumes 5
+
+// Shared Buffer and Tracking Variables
+int buffer[BUFFER_SIZE];
+int in = 0;  // Index for the next produced item
+int out = 0; // Index for the next consumed item
+
+// Synchronization primitives
+pthread_mutex_t mutex; // Protects shared buffer access
+sem_t empty;           // Counts empty slots in the buffer
+sem_t full;            // Counts filled slots in the buffer
+
+// Producer Thread Function
+void *producer(void *arg) {
+    int id = *((int *)arg);
+    int item;
+
+    for (int i = 0; i < ITEMS_PER_THREAD; i++) {
+        item = (id * 100) + i; // Generate a unique item number
+
+        // 1. Wait until there is at least one empty slot
+        sem_wait(&empty);
+        
+        // 2. Lock the mutex to get exclusive access to the buffer
+        pthread_mutex_lock(&mutex);
+
+        // --- CRITICAL SECTION START ---
+        buffer[in] = item;
+        printf("Producer %d: Inserted Item %d at index %d\n", id, item, in);
+        in = (in + 1) % BUFFER_SIZE; // Circular buffer
+        // --- CRITICAL SECTION END ---
+
+        // 3. Unlock the mutex
+        pthread_mutex_unlock(&mutex);
+        
+        // 4. Signal that a new full slot is available
+        sem_post(&full);
+
+        sleep(1); // Simulate work to allow thread interleaving
+    }
+    pthread_exit(NULL);
 }
 
-void linearTime(int n) {
-    long long sum = 0;
-    for (int i = 0; i < n; i++)
-        sum += i;
-}
+// Consumer Thread Function
+void *consumer(void *arg) {
+    int id = *((int *)arg);
+    int item;
 
-void quadraticTime(int n) {
-    long long count = 0;
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            count++;
+    for (int i = 0; i < ITEMS_PER_THREAD; i++) {
+        // 1. Wait until there is at least one full slot (an item to consume)
+        sem_wait(&full);
+        
+        // 2. Lock the mutex to get exclusive access to the buffer
+        pthread_mutex_lock(&mutex);
+
+        // --- CRITICAL SECTION START ---
+        item = buffer[out];
+        printf("Consumer %d: Removed Item %d from index %d\n", id, item, out);
+        out = (out + 1) % BUFFER_SIZE; // Circular buffer
+        // --- CRITICAL SECTION END ---
+
+        // 3. Unlock the mutex
+        pthread_mutex_unlock(&mutex);
+        
+        // 4. Signal that a new empty slot is available
+        sem_post(&empty);
+
+        sleep(1); // Simulate work to allow thread interleaving
+    }
+    pthread_exit(NULL);
 }
 
 int main() {
+    pthread_t producers[NUM_PRODUCERS];
+    pthread_t consumers[NUM_CONSUMERS];
+    int prod_ids[NUM_PRODUCERS];
+    int cons_ids[NUM_CONSUMERS];
 
-    int n;
-    clock_t start, end;
-    double timeTaken;
-
-    printf("Enter value of n: ");
-    scanf("%d", &n);
-
+    // Initialize the mutex
+    pthread_mutex_init(&mutex, NULL);
     
-    start = clock();
-    constantTime();
-    end = clock();
-    printf("\nConstant Time O(1): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    // Initialize semaphores
+    // sem_init(&semaphore, pshared, value);
+    sem_init(&empty, 0, BUFFER_SIZE); // Initially, all slots are empty
+    sem_init(&full, 0, 0);            // Initially, zero slots are full
 
-    
-    start = clock();
-    linearTime(n);
-    end = clock();
-    printf("\nLinear Time O(n): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    printf("Starting Producer-Consumer Simulation...\n\n");
 
-    
-    start = clock();
-    quadraticTime(n);
-    end = clock();
-    printf("\nQuadratic Time O(n^2): %f seconds\n",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    // Create Producer Threads
+    for (int i = 0; i < NUM_PRODUCERS; i++) {
+        prod_ids[i] = i + 1;
+        pthread_create(&producers[i], NULL, producer, &prod_ids[i]);
+    }
 
+    // Create Consumer Threads
+    for (int i = 0; i < NUM_CONSUMERS; i++) {
+        cons_ids[i] = i + 1;
+        pthread_create(&consumers[i], NULL, consumer, &cons_ids[i]);
+    }
+
+    // Wait for all threads to finish
+    for (int i = 0; i < NUM_PRODUCERS; i++) {
+        pthread_join(producers[i], NULL);
+    }
+    for (int i = 0; i < NUM_CONSUMERS; i++) {
+        pthread_join(consumers[i], NULL);
+    }
+
+    // Cleanup synchronization primitives
+    pthread_mutex_destroy(&mutex);
+    sem_destroy(&empty);
+    sem_destroy(&full);
+
+    printf("\nSimulation Complete.\n");
     return 0;
 }
