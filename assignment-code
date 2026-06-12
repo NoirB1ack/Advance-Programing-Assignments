@@ -1,53 +1,70 @@
-#include <stdio.h>
-#include <time.h>
+import sys
+import gc
 
-void constantTime() {
-    int x = 5;
-    x = x * 2 + 7;
-}
+# Step 1: Create a Node class
+class Node:
+    def __init__(self, name):
+        self.name = name
+        self.link = None
 
-void linearTime(int n) {
-    long long sum = 0;
-    for (int i = 0; i < n; i++)
-        sum += i;
-}
-
-void quadraticTime(int n) {
-    long long count = 0;
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            count++;
-}
-
-int main() {
-
-    int n;
-    clock_t start, end;
-    double timeTaken;
-
-    printf("Enter value of n: ");
-    scanf("%d", &n);
-
+    def __repr__(self):
+        return f"Node(name={self.name})"
     
-    start = clock();
-    constantTime();
-    end = clock();
-    printf("\nConstant Time O(1): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    # Adding a destructor to prove exactly when the object is destroyed
+    def __del__(self):
+        print(f"     [!] Destructor called: {self.name} is now physically deleted from memory.")
 
+def demonstrate_cycle():
+    # Disable automatic garbage collection for the demonstration
+    gc.disable()
+
+    # Step 2: Create a Cycle
+    print("--- Step 2: Instantiating Nodes ---")
+    node_a = Node("A")
+    node_b = Node("B")
+    print(f"Created: {node_a} and {node_b}")
+
+    # Step 3: Set links to create the cycle
+    print("\n--- Step 3: Creating the Cycle ---")
+    node_a.link = node_b
+    node_b.link = node_a
+    print("Cycle established: node_a points to node_b, and node_b points to node_a.")
+
+    # Step 4: Check References
+    print("\n--- Step 4: Checking References ---")
+    # Note: sys.getrefcount() returns 1 higher than the actual count 
+    # because passing the object to the function creates a temporary reference.
+    print(f"Reference count for node_a: {sys.getrefcount(node_a)}")
+    print(f"Reference count for node_b: {sys.getrefcount(node_b)}")
+
+    # Step 5: The "Deletion"
+    print("\n--- Step 5: Deleting Local Variables ---")
+    del node_a
+    del node_b
+    print("Called 'del node_a' and 'del node_b'. The variables are gone from the script's scope.")
+
+    # Step 6: The Investigation
+    print("\n--- Step 6: Investigating Memory ---")
+    # We iterate through all objects the GC is currently tracking to find our Nodes
+    tracked_nodes = [obj for obj in gc.get_objects() if isinstance(obj, Node)]
     
-    start = clock();
-    linearTime(n);
-    end = clock();
-    printf("\nLinear Time O(n): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    print(f"Found {len(tracked_nodes)} Node objects still alive in memory!")
+    for node in tracked_nodes:
+        print(f"  -> Ghost object found: {node}")
+    print("Even though we deleted the variables, the objects keep each other alive via their 'link' attributes.")
 
+    # Step 7: The Cleanup
+    print("\n--- Step 7: The Cleanup ---")
+    print("Calling gc.collect()...")
+    unreachable_count = gc.collect()
     
-    start = clock();
-    quadraticTime(n);
-    end = clock();
-    printf("\nQuadratic Time O(n^2): %f seconds\n",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    # Note: The count of collected objects will likely be higher than 2. 
+    # This is because standard Python objects also possess an internal __dict__ 
+    # which is tracked and collected alongside the object itself.
+    print(f"GC successfully collected {unreachable_count} unreachable objects.")
 
-    return 0;
-}
+    # Re-enable automatic garbage collection
+    gc.enable()
+
+if __name__ == "__main__":
+    demonstrate_cycle()
