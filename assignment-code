@@ -1,53 +1,121 @@
 #include <stdio.h>
-#include <time.h>
+#include <stdlib.h>
+#include <string.h>
 
-void constantTime() {
-    int x = 5;
-    x = x * 2 + 7;
+// 1. Define the StringBuffer struct
+typedef struct {
+    char *data;
+    size_t length;
+    size_t capacity;
+} StringBuffer;
+
+// 2. Initialize the string buffer
+StringBuffer* sb_init(size_t initial_capacity) {
+    // Prevent a starting capacity of 0, which breaks the doubling logic
+    if (initial_capacity == 0) {
+        initial_capacity = 1;
+    }
+
+    StringBuffer *sb = (StringBuffer *)malloc(sizeof(StringBuffer));
+    if (sb == NULL) {
+        return NULL; // Struct allocation failed
+    }
+
+    sb->data = (char *)malloc(initial_capacity * sizeof(char));
+    if (sb->data == NULL) {
+        free(sb); // Clean up the struct if data allocation fails
+        return NULL; 
+    }
+
+    sb->data[0] = '\0'; // Initialize as an empty string
+    sb->length = 0;
+    sb->capacity = initial_capacity;
+
+    return sb;
 }
 
-void linearTime(int n) {
-    long long sum = 0;
-    for (int i = 0; i < n; i++)
-        sum += i;
+// 3 & 4. Append to the buffer and handle safe reallocation
+int sb_append(StringBuffer *sb, const char *str) {
+    if (sb == NULL || str == NULL) {
+        return -1; // Invalid arguments
+    }
+
+    size_t str_len = strlen(str);
+    size_t needed_capacity = sb->length + str_len + 1; // +1 for the null terminator
+
+    // Check if we need to resize
+    if (needed_capacity > sb->capacity) {
+        size_t new_capacity = sb->capacity * 2;
+        
+        // Ensure the doubled capacity is actually enough (in case of a massive appended string)
+        while (new_capacity < needed_capacity) {
+            new_capacity *= 2;
+        }
+
+        // Use a temporary pointer for realloc to prevent memory leaks if it fails!
+        char *new_data = (char *)realloc(sb->data, new_capacity * sizeof(char));
+        if (new_data == NULL) {
+            // Reallocation failed. The original sb->data is still valid and untouched.
+            fprintf(stderr, "Error: Memory reallocation failed.\n");
+            return -1; 
+        }
+
+        sb->data = new_data;
+        sb->capacity = new_capacity;
+    }
+
+    // Append the new string at the end of the current data
+    // Using memcpy is slightly faster than strcat because we already know the exact offset
+    memcpy(sb->data + sb->length, str, str_len + 1); 
+    sb->length += str_len;
+
+    return 0; // Success
 }
 
-void quadraticTime(int n) {
-    long long count = 0;
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            count++;
+// 5. Destructor to free all memory
+void sb_free(StringBuffer *sb) {
+    if (sb != NULL) {
+        if (sb->data != NULL) {
+            free(sb->data);
+        }
+        free(sb);
+    }
 }
 
+// Demonstration
 int main() {
-
-    int n;
-    clock_t start, end;
-    double timeTaken;
-
-    printf("Enter value of n: ");
-    scanf("%d", &n);
-
+    // Initialize with a very small capacity to force multiple reallocations quickly
+    printf("Initializing buffer with capacity 5...\n");
+    StringBuffer *sb = sb_init(5);
+    if (sb == NULL) {
+        fprintf(stderr, "Failed to initialize StringBuffer.\n");
+        return 1;
+    }
     
-    start = clock();
-    constantTime();
-    end = clock();
-    printf("\nConstant Time O(1): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    printf("State 0: Length=%zu, Capacity=%zu, Data=\"%s\"\n\n", sb->length, sb->capacity, sb->data);
 
-    
-    start = clock();
-    linearTime(n);
-    end = clock();
-    printf("\nLinear Time O(n): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    // Append 1: "Hello" (Length 5). Requires 6 bytes (including '\0'). 
+    // Capacity 5 -> Doubles to 10. (First Growth)
+    printf("Appending \"Hello\"...\n");
+    sb_append(sb, "Hello");
+    printf("State 1: Length=%zu, Capacity=%zu, Data=\"%s\"\n\n", sb->length, sb->capacity, sb->data);
 
-    
-    start = clock();
-    quadraticTime(n);
-    end = clock();
-    printf("\nQuadratic Time O(n^2): %f seconds\n",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    // Append 2: " World!" (Length 7). Total length 12. Requires 13 bytes.
+    // Capacity 10 -> Doubles to 20. (Second Growth)
+    printf("Appending \" World!\"...\n");
+    sb_append(sb, " World!");
+    printf("State 2: Length=%zu, Capacity=%zu, Data=\"%s\"\n\n", sb->length, sb->capacity, sb->data);
+
+    // Append 3: " Managing strings in C safely." (Length 30). Total length 42. Requires 43 bytes.
+    // Capacity 20 -> Doubles to 40 -> Doubles to 80. (Third Growth)
+    printf("Appending \" Managing strings in C safely.\"...\n");
+    sb_append(sb, " Managing strings in C safely.");
+    printf("State 3: Length=%zu, Capacity=%zu, Data=\"%s\"\n\n", sb->length, sb->capacity, sb->data);
+
+    // Free memory
+    printf("Freeing buffer memory...\n");
+    sb_free(sb);
+    printf("Done.\n");
 
     return 0;
-}
+} 
