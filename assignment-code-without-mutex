@@ -1,0 +1,32 @@
+#include <pthread.h>
+#include <stdio.h>
+
+#define NUM_THREADS 5
+#define INCREMENTS 1000000
+
+long shared_counter = 0;
+
+void* increment_count(void* arg) {
+    for (int i = 0; i < INCREMENTS; i++) {
+        // Critical Section (Unprotected)
+        shared_counter++; 
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t threads[NUM_THREADS];
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_create(&threads[i], NULL, increment_count, NULL);
+    }
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    printf("Final Counter (Unsynchronized): %ld\n", shared_counter);
+    printf("Expected Value: %ld\n", (long)NUM_THREADS * INCREMENTS);
+
+    return 0;
+}
