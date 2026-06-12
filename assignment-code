@@ -1,53 +1,71 @@
-#include <stdio.h>
-#include <time.h>
+import re
 
-void constantTime() {
-    int x = 5;
-    x = x * 2 + 7;
-}
+# ==========================================
+# 1. CUSTOM EXCEPTIONS
+# ==========================================
 
-void linearTime(int n) {
-    long long sum = 0;
-    for (int i = 0; i < n; i++)
-        sum += i;
-}
+class InvalidEmailError(ValueError):
+    def __init__(self, provided_email: str, reason: str = "Invalid email format"):
+        self.provided_email = provided_email
+        self.message = f"{reason}. Provided: '{self.provided_email}'"
+        super().__init__(self.message)
 
-void quadraticTime(int n) {
-    long long count = 0;
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            count++;
-}
+class UnderageError(ValueError):
+    def __init__(self, provided_age: int, required_age: int = 18):
+        self.provided_age = provided_age
+        self.required_age = required_age
+        self.message = f"Age restriction triggered. Applicant age ({self.provided_age}) is below the minimum requirement of {self.required_age}."
+        super().__init__(self.message)
 
-int main() {
+# ==========================================
+# 2. CORE SERVICE VALIDATION
+# ==========================================
 
-    int n;
-    clock_t start, end;
-    double timeTaken;
+class RegistrationService:
+    EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+    MINIMUM_AGE = 18
 
-    printf("Enter value of n: ");
-    scanf("%d", &n);
+    def register_user(self, email: str, age: int) -> bool:
+        # Invariants
+        assert email is not None, "Email cannot be null."
+        assert isinstance(email, str), "Email must be a string."
+        assert isinstance(age, int), "Age must be an integer."
 
+        # Validation
+        if not email.strip():
+            raise InvalidEmailError(email, reason="Email cannot be empty")
+        if not self.EMAIL_REGEX.match(email):
+            raise InvalidEmailError(email)
+        if age < self.MINIMUM_AGE:
+            raise UnderageError(provided_age=age, required_age=self.MINIMUM_AGE)
+
+        return True
+
+# ==========================================
+# 3. INTERACTIVE USER INPUT
+# ==========================================
+
+if __name__ == "__main__":
+    print("=== Welcome to the Registration Portal ===")
     
-    start = clock();
-    constantTime();
-    end = clock();
-    printf("\nConstant Time O(1): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
-
+    # 1. Take user input
+    user_email = input("Enter your email address: ")
+    user_age_str = input("Enter your age: ")
     
-    start = clock();
-    linearTime(n);
-    end = clock();
-    printf("\nLinear Time O(n): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
-
-    
-    start = clock();
-    quadraticTime(n);
-    end = clock();
-    printf("\nQuadratic Time O(n^2): %f seconds\n",
-           (double)(end - start) / CLOCKS_PER_SEC);
-
-    return 0;
-}
+    try:
+        # Convert age input to an integer
+        user_age = int(user_age_str)
+        
+        # 2. Process the data
+        service = RegistrationService()
+        print("\nProcessing registration...")
+        
+        if service.register_user(user_email, user_age):
+            print(" Success! Your account has been registered.")
+            
+    except ValueError as e:
+        # This catches our custom errors (UnderageError/InvalidEmailError) 
+        # AND triggers if the user typed letters for their age.
+        print(f" Registration Failed: {e}")
+    except AssertionError as e:
+        print(f" System Error: {e}")
