@@ -26,8 +26,8 @@ git checkout assignment6      # then read its README.md and source
 | `assignment-08` | Course Enrollment Dashboard | React |
 | `assignment-09` | Banking System using OOP Concepts | Java |
 | `assignment-10` | Student Management System with Composition | Python |
-| `assignment-11` | Library Management System using Abstraction & Polymorphism | Java |
-| `assignment-12` | E-Commerce Order Processing System (SOLID Principles) | Java |
+| `assignment-11` | Library Management System using Abstraction & Polymorphism | Python |
+| `assignment-12` | E-Commerce Order Processing System (SOLID Principles) | Python |
 | `assignment-13` | Dynamic String Buffer Implementation | C |
 | `assignment-14` | Garbage Collection and Circular References | Python |
 | `assignment-15` | Multithreading with Mutex Synchronization | C |
