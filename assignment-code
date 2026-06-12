@@ -1,53 +1,94 @@
-#include <stdio.h>
-#include <time.h>
+import random
+from typing import List, Dict, Set, Tuple
+from collections import defaultdict
 
-void constantTime() {
-    int x = 5;
-    x = x * 2 + 7;
-}
+# Type alias for clarity
+LogEntry = Dict[str, str | float]
 
-void linearTime(int n) {
-    long long sum = 0;
-    for (int i = 0; i < n; i++)
-        sum += i;
-}
+class ActivityAnalyzer:
+    """
+    A comprehensive log analyzer that displays raw data and 
+    performs algorithmic ranking using Quicksort.
+    """
 
-void quadraticTime(int n) {
-    long long count = 0;
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            count++;
-}
+    @staticmethod
+    def generate_logs(n: int) -> List[LogEntry]:
+        """Generates random logs. Complexity: O(N) Time | O(N) Space."""
+        actions = ["browser", "ide", "compiler", "terminal", "docs", "forum"]
+        num_students = max(5, n // 10)
+        users = [f"roll_{i:03d}" for i in range(1, num_students + 1)]
+        
+        return [
+            {
+                "user": random.choice(users),
+                "action": random.choice(actions),
+                "duration": round(random.uniform(1.0, 180.0), 2)
+            }
+            for _ in range(n)
+        ]
 
-int main() {
+    @staticmethod
+    def quicksort_records(items: List[Tuple[str, float]]) -> List[Tuple[str, float]]:
+        """Manual Quicksort. Complexity: O(U log U) Average."""
+        if len(items) <= 1:
+            return items
+        pivot = items[len(items) // 2]
+        left = [x for x in items if x[1] > pivot[1]]
+        middle = [x for x in items if x[1] == pivot[1]]
+        right = [x for x in items if x[1] < pivot[1]]
+        return ActivityAnalyzer.quicksort_records(left) + middle + ActivityAnalyzer.quicksort_records(right)
 
-    int n;
-    clock_t start, end;
-    double timeTaken;
+    @staticmethod
+    def get_user_totals(logs: List[LogEntry]) -> Dict[str, float]:
+        """Complexity: O(N) Time."""
+        totals = defaultdict(float)
+        for entry in logs:
+            totals[entry["user"]] += entry["duration"]
+        return dict(totals)
 
-    printf("Enter value of n: ");
-    scanf("%d", &n);
+def run_analysis_report():
+    print("=" * 65)
+    print("            STUDENT ACTIVITY LOGGING SYSTEM")
+    print("=" * 65)
 
+    # 1. Setup
+    try:
+        n_input = input("How many records to generate?: ")
+        n = int(n_input.strip()) if n_input.strip() else 15
+    except ValueError:
+        n = 15
+
+    analyzer = ActivityAnalyzer()
+    dataset = analyzer.generate_logs(n)
     
-    start = clock();
-    constantTime();
-    end = clock();
-    printf("\nConstant Time O(1): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    # 2. Display ALL Records (The Raw Data)
+    print(f"\n[1] ALL GENERATED LOG RECORDS (N = {n})")
+    print(f"{'ID':<4} | {'User ID':<10} | {'Action':<15} | {'Duration (min)':<15}")
+    print("-" * 55)
+    for idx, entry in enumerate(dataset, 1):
+        print(f"{idx:<4} | {entry['user']:<10} | {entry['action']:<15} | {entry['duration']:<15.2f}")
 
+    # 3. Perform Analysis
+    user_totals = analyzer.get_user_totals(dataset)
+    # Sort the unique users for the ranking section
+    sorted_users = analyzer.quicksort_records(list(user_totals.items()))
     
-    start = clock();
-    linearTime(n);
-    end = clock();
-    printf("\nLinear Time O(n): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    # 4. Display Ranking
+    print(f"\n[2] TOP 3 ACTIVE USERS (Calculated using Quicksort)")
+    print("-" * 45)
+    for i, (user, time) in enumerate(sorted_users[:3], 1):
+        print(f"Rank {i}: {user} with {time:.2f} total minutes")
 
-    
-    start = clock();
-    quadraticTime(n);
-    end = clock();
-    printf("\nQuadratic Time O(n^2): %f seconds\n",
-           (double)(end - start) / CLOCKS_PER_SEC);
+    # 5. Complexity Breakdown for Professor
+    print("\n" + "=" * 65)
+    print("                 TIME COMPLEXITY ANALYSIS")
+    print("=" * 65)
+    print(f"Operation          | Complexity      | Explanation")
+    print(f"-" * 65)
+    print(f"Display All        | O(N)            | Iterating through every log")
+    print(f"Aggregation        | O(N)            | Summing durations per user")
+    print(f"Ranking (Sort)     | O(U log U)      | Sorting unique users (U)")
+    print("=" * 65)
 
-    return 0;
-}
+if __name__ == "__main__":
+    run_analysis_report()
