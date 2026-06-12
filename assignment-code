@@ -1,53 +1,281 @@
-#include <stdio.h>
-#include <time.h>
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
-void constantTime() {
-    int x = 5;
-    x = x * 2 + 7;
+// ---------------------------------------------------------
+// 1. MAIN CLASS (Now with User Input via Scanner)
+// ---------------------------------------------------------
+public class A9 {
+    // We use a static list to store accounts created during the session
+    private static List<Account> accounts = new ArrayList<>();
+    private static Scanner scanner = new Scanner(System.in);
+
+    public static void main(String[] args) {
+        boolean running = true;
+
+        System.out.println("Welcome to the Java Banking System!");
+
+        while (running) {
+            System.out.println("\n--- MAIN MENU ---");
+            System.out.println("1. Create a New Account");
+            System.out.println("2. Deposit Funds");
+            System.out.println("3. Withdraw Funds");
+            System.out.println("4. Display All Accounts");
+            System.out.println("5. Exit");
+            System.out.print("Choose an option: ");
+
+            int choice = -1;
+            try {
+                // Read input as string and parse to avoid scanner newline bugs
+                choice = Integer.parseInt(scanner.nextLine()); 
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a number.");
+                continue;
+            }
+
+            switch (choice) {
+                case 1:
+                    createAccount();
+                    break;
+                case 2:
+                    handleDeposit();
+                    break;
+                case 3:
+                    handleWithdrawal();
+                    break;
+                case 4:
+                    displayAccounts();
+                    break;
+                case 5:
+                    running = false;
+                    System.out.println("Thank you for using the Banking System. Goodbye!");
+                    break;
+                default:
+                    System.out.println("Invalid choice. Please select 1-5.");
+            }
+        }
+        scanner.close();
+    }
+
+    // Helper method to create accounts based on user input
+    private static void createAccount() {
+        System.out.println("\n--- Create Account ---");
+        System.out.println("1. Standard Account");
+        System.out.println("2. Savings Account (Earns Interest)");
+        System.out.println("3. Current Account (Has Overdraft)");
+        System.out.print("Select account type: ");
+        
+        String typeChoice = scanner.nextLine();
+
+        System.out.print("Enter Account Number (e.g., ACC-101): ");
+        String accNum = scanner.nextLine();
+        
+        System.out.print("Enter Owner Name: ");
+        String owner = scanner.nextLine();
+
+        try {
+            switch (typeChoice) {
+                case "1":
+                    accounts.add(new Account(accNum, owner));
+                    System.out.println("Standard Account created successfully!");
+                    break;
+                case "2":
+                    System.out.print("Enter Initial Deposit: $");
+                    double savDep = Double.parseDouble(scanner.nextLine());
+                    System.out.print("Enter Interest Rate (%): ");
+                    double rate = Double.parseDouble(scanner.nextLine());
+                    accounts.add(new SavingsAccount(accNum, owner, savDep, rate));
+                    System.out.println("Savings Account created successfully!");
+                    break;
+                case "3":
+                    System.out.print("Enter Initial Deposit: $");
+                    double curDep = Double.parseDouble(scanner.nextLine());
+                    System.out.print("Enter Overdraft Limit: $");
+                    double limit = Double.parseDouble(scanner.nextLine());
+                    accounts.add(new CurrentAccount(accNum, owner, curDep, limit));
+                    System.out.println("Current Account created successfully!");
+                    break;
+                default:
+                    System.out.println("Invalid account type selected. Creation cancelled.");
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Error: Please enter valid numbers for money/rates.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Error creating account: " + e.getMessage());
+        }
+    }
+
+    // Helper to find an account, ask for amount, and deposit
+    private static void handleDeposit() {
+        Account acc = findAccount();
+        if (acc != null) {
+            System.out.print("Enter amount to deposit: $");
+            try {
+                double amount = Double.parseDouble(scanner.nextLine());
+                acc.deposit(amount);
+            } catch (NumberFormatException e) {
+                System.out.println("Error: Invalid amount entered.");
+            } catch (IllegalArgumentException e) {
+                System.out.println("Transaction Failed: " + e.getMessage());
+            }
+        }
+    }
+
+    // Helper to find an account, ask for amount, and withdraw
+    private static void handleWithdrawal() {
+        Account acc = findAccount();
+        if (acc != null) {
+            System.out.print("Enter amount to withdraw: $");
+            try {
+                double amount = Double.parseDouble(scanner.nextLine());
+                acc.withdraw(amount);
+            } catch (NumberFormatException e) {
+                System.out.println("Error: Invalid amount entered.");
+            } catch (IllegalArgumentException e) {
+                System.out.println("Transaction Failed: " + e.getMessage());
+            }
+        }
+    }
+
+    // Utility to search the list for an account number
+    private static Account findAccount() {
+        if (accounts.isEmpty()) {
+            System.out.println("No accounts exist yet. Please create one first.");
+            return null;
+        }
+        
+        System.out.print("Enter Account Number: ");
+        String searchNum = scanner.nextLine();
+        
+        for (Account acc : accounts) {
+            if (acc.getAccountNumber().equalsIgnoreCase(searchNum)) {
+                return acc;
+            }
+        }
+        System.out.println("Account not found.");
+        return null;
+    }
+
+    // Displays all accounts in the system
+    private static void displayAccounts() {
+        if (accounts.isEmpty()) {
+            System.out.println("\nNo accounts to display.");
+            return;
+        }
+        System.out.println("\n--- All Accounts ---");
+        for (Account acc : accounts) {
+            acc.display();
+        }
+    }
 }
 
-void linearTime(int n) {
-    long long sum = 0;
-    for (int i = 0; i < n; i++)
-        sum += i;
+// ---------------------------------------------------------
+// 2. BASE CLASS
+// ---------------------------------------------------------
+class Account {
+    private String accountNumber;
+    private String ownerName;
+    private double balance;
+
+    public Account(String accountNumber, String ownerName, double balance) {
+        if (balance < 0) {
+            throw new IllegalArgumentException("Initial balance cannot be negative.");
+        }
+        this.accountNumber = accountNumber;
+        this.ownerName = ownerName;
+        this.balance = balance;
+    }
+
+    public Account(String accountNumber, String ownerName) {
+        this(accountNumber, ownerName, 0.0);
+    }
+
+    public String getAccountNumber() { return accountNumber; }
+    public String getOwnerName() { return ownerName; }
+    public void setOwnerName(String ownerName) { this.ownerName = ownerName; }
+    public double getBalance() { return balance; }
+
+    protected void setBalance(double balance) { 
+        this.balance = balance; 
+    }
+
+    public void deposit(double amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Deposit amount must be positive.");
+        }
+        this.balance += amount;
+        System.out.println("Success! Deposited $" + amount + ". New balance: $" + balance);
+    }
+
+    public void withdraw(double amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Withdrawal amount must be positive.");
+        }
+        if (amount > balance) {
+            throw new IllegalArgumentException("Insufficient funds.");
+        }
+        this.balance -= amount;
+        System.out.println("Success! Withdrew $" + amount + ". New balance: $" + balance);
+    }
+
+    public void display() {
+        System.out.println("---------------------------------");
+        System.out.println("Account Number: " + accountNumber);
+        System.out.println("Owner Name: " + ownerName);
+        System.out.println("Balance: $" + String.format("%.2f", balance));
+    }
 }
 
-void quadraticTime(int n) {
-    long long count = 0;
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            count++;
+// ---------------------------------------------------------
+// 3. SAVINGS ACCOUNT
+// ---------------------------------------------------------
+class SavingsAccount extends Account {
+    private double interestRate;
+
+    public SavingsAccount(String accountNumber, String ownerName, double balance, double interestRate) {
+        super(accountNumber, ownerName, balance);
+        this.interestRate = interestRate;
+    }
+
+    @Override
+    public void display() {
+        super.display();
+        System.out.println("Account Type: Savings Account");
+        System.out.println("Interest Rate: " + interestRate + "%");
+    }
 }
 
-int main() {
+// ---------------------------------------------------------
+// 4. CURRENT ACCOUNT
+// ---------------------------------------------------------
+class CurrentAccount extends Account {
+    private double overdraftLimit;
 
-    int n;
-    clock_t start, end;
-    double timeTaken;
+    public CurrentAccount(String accountNumber, String ownerName, double balance, double overdraftLimit) {
+        super(accountNumber, ownerName, balance);
+        this.overdraftLimit = overdraftLimit;
+    }
 
-    printf("Enter value of n: ");
-    scanf("%d", &n);
+    @Override
+    public void withdraw(double amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Withdrawal amount must be positive.");
+        }
+        
+        double availableFunds = getBalance() + overdraftLimit;
+        
+        if (amount > availableFunds) {
+            throw new IllegalArgumentException("Exceeds overdraft limit of $" + overdraftLimit);
+        }
+        
+        setBalance(getBalance() - amount);
+        System.out.println("Success! Withdrew $" + amount + " (Current Account). New balance: $" + getBalance());
+    }
 
-    
-    start = clock();
-    constantTime();
-    end = clock();
-    printf("\nConstant Time O(1): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
-
-    
-    start = clock();
-    linearTime(n);
-    end = clock();
-    printf("\nLinear Time O(n): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
-
-    
-    start = clock();
-    quadraticTime(n);
-    end = clock();
-    printf("\nQuadratic Time O(n^2): %f seconds\n",
-           (double)(end - start) / CLOCKS_PER_SEC);
-
-    return 0;
+    @Override
+    public void display() {
+        super.display();
+        System.out.println("Account Type: Current Account");
+        System.out.println("Overdraft Limit: $" + overdraftLimit);
+    }
 }
