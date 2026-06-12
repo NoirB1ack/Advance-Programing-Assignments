@@ -1,53 +1,67 @@
-#include <stdio.h>
-#include <time.h>
+// Source code is decompiled from a .class file using FernFlower decompiler (from Intellij IDEA).
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
+import java.util.Scanner;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-void constantTime() {
-    int x = 5;
-    x = x * 2 + 7;
-}
+public class A6 {
+   private static final List<String> COURSE_POOL = Arrays.asList("Math", "DSA", "OS", "DBMS", "CN");
+   private static final Random random = new Random();
 
-void linearTime(int n) {
-    long long sum = 0;
-    for (int i = 0; i < n; i++)
-        sum += i;
-}
+   public A6() {
+   }
 
-void quadraticTime(int n) {
-    long long count = 0;
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            count++;
-}
+   static Student generateRandomStudent(int var0) {
+      String var1 = "Student" + var0;
+      int var2 = 2 + random.nextInt(3);
+      ArrayList var3 = new ArrayList(COURSE_POOL);
+      Collections.shuffle(var3);
+      ArrayList var4 = new ArrayList(var3.subList(0, var2));
+      HashMap var5 = new HashMap();
 
-int main() {
+      for(String var7 : var4) {
+         var5.put(var7, 40 + random.nextInt(61));
+      }
 
-    int n;
-    clock_t start, end;
-    double timeTaken;
+      return new Student(var0, var1, var4, var5);
+   }
 
-    printf("Enter value of n: ");
-    scanf("%d", &n);
+   public static void main(String[] var0) {
+      Scanner var1 = new Scanner(System.in);
 
-    
-    start = clock();
-    constantTime();
-    end = clock();
-    printf("\nConstant Time O(1): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+      try {
+         System.out.print("Enter number of students: ");
+         int var2 = var1.nextInt();
+         List var3 = (List)IntStream.rangeClosed(1, var2).mapToObj(A6::generateRandomStudent).collect(Collectors.toList());
+         System.out.println("\n--- Analysis Results ---");
+         System.out.println("\nTop 3 Students [Complexity: O(N log N)]:");
+         List var10000 = StudentPerformanceAnalyzer.getTopNStudents(var3, Math.min(3, var2));
+         PrintStream var10001 = System.out;
+         Objects.requireNonNull(var10001);
+         var10000.forEach(var10001::println);
+         System.out.println("\nAvg Score Per Course [Complexity: O(N * M)]:");
+         Map var4 = StudentPerformanceAnalyzer.getAverageScorePerCourse(var3);
+         var4.forEach((var0x, var1x) -> System.out.printf("%s: %.2f\n", var0x, var1x));
+         System.out.println("\nUnique Courses [Complexity: O(N * M)]:");
+         System.out.println(StudentPerformanceAnalyzer.getAllUniqueCourses(var3));
+      } catch (Throwable var6) {
+         try {
+            var1.close();
+         } catch (Throwable var5) {
+            var6.addSuppressed(var5);
+         }
 
-    
-    start = clock();
-    linearTime(n);
-    end = clock();
-    printf("\nLinear Time O(n): %f seconds",
-           (double)(end - start) / CLOCKS_PER_SEC);
+         throw var6;
+      }
 
-    
-    start = clock();
-    quadraticTime(n);
-    end = clock();
-    printf("\nQuadratic Time O(n^2): %f seconds\n",
-           (double)(end - start) / CLOCKS_PER_SEC);
-
-    return 0;
+      var1.close();
+   }
 }
