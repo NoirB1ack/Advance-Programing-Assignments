@@ -2,7 +2,7 @@
 
 ## Question
 
-Design a library system in Java with:
+Design a library system in Python with:
 
 ### Base/Abstract Class
 
