@@ -1,9 +1,5 @@
 # Assignment 06: Student Performance Analyzer
 
-## Technology Used
-
-- Java
-
 ## Question
 
 Develop a student performance analyzer in Java. You are given a list of students of your batch. Each student has:
